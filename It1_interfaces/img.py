@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pathlib
-
 import cv2
 import numpy as np
 
@@ -13,27 +12,6 @@ class Img:
              size: tuple[int, int] | None = None,
              keep_aspect: bool = False,
              interpolation: int = cv2.INTER_AREA) -> "Img":
-        """
-        Load `path` into self.img and **optionally resize**.
-
-        Parameters
-        ----------
-        path : str | Path
-            Image file to load.
-        size : (width, height) | None
-            Target size in pixels.  If None, keep original.
-        keep_aspect : bool
-            • False  → resize exactly to `size`
-            • True   → shrink so the *longer* side fits `size` while
-                       preserving aspect ratio (no cropping).
-        interpolation : OpenCV flag
-            E.g.  `cv2.INTER_AREA` for shrink, `cv2.INTER_LINEAR` for enlarge.
-
-        Returns
-        -------
-        Img
-            `self`, so you can chain:  `sprite = Img().read("foo.png", (64,64))`
-        """
         path = str(path)
         self.img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
         if self.img is None:
@@ -89,6 +67,12 @@ class Img:
     def show(self):
         if self.img is None:
             raise ValueError("Image not loaded.")
-        cv2.imshow("Image", self.img)
+        cv2.imshow("Game", self.img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+
+    def copy(self) -> "Img":
+        new_img = Img()
+        if self.img is not None:
+            new_img.img = self.img.copy()
+        return new_img

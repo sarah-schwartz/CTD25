@@ -9,8 +9,8 @@ run()
     in = listen to keyboard
     process_input(in)
     
-#design patterns:
-# Factory, Command, Tempalte, State Machine
+design patterns:
+Factory, Command, Tempalte, State Machine
 
 def create_game(board.txt, root_folder):
     pieces_templates = {} # { piece_id : piece }

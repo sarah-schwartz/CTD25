@@ -4,11 +4,11 @@ from typing import List, Tuple
 
 class Moves:
     def __init__(self, txt_path: pathlib.Path, dims: Tuple[int, int]):
-        """Initialize moves with rules from text file and board dimensions."""
+        """Initialize moves with rules from a text file and board dimensions."""
         self.rules: List[Tuple[int, int]] = []
         self.rows, self.cols = dims
 
-        # טוען חוקי תנועה מהקובץ
+        # Load move rules from file
         with open(txt_path, "r") as f:
             for line in f:
                 line = line.strip()
