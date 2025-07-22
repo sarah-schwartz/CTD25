@@ -22,7 +22,7 @@ class Game:
         self.player1 = PlayerInputState(is_player_one=True)
         self.player2 = PlayerInputState(is_player_one=False)
 
-        self.player1.cursor = [3, 6]
+        self.player1.cursor = [4, 6]
         self.player2.cursor = [4, 1]
 
     def game_time_ms(self) -> int:
@@ -33,7 +33,7 @@ class Game:
 
     from pynput.keyboard import Key, KeyCode
 
-    
+  
     def start_user_input_thread(self):
         def on_press(key):
             self.user_input_queue.put(key)
@@ -103,7 +103,6 @@ class Game:
 
             char = char.lower()
 
-            # נגדיר את המקשים לפי אנגלית בלבד:
             if char == 'a':
                 self.player2.cursor[0] = max(0, self.player2.cursor[0] - 1)
             elif char == 'w':
