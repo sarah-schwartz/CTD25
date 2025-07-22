@@ -6,50 +6,151 @@ from typing import List, Dict
 from Board import Board
 from Piece import Piece
 from img import Img
+from Command import Command
+from PlayerInputState import PlayerInputState
+from pynput import keyboard
+from pynput.keyboard import Key, KeyCode
 
 class Game:
     def __init__(self, pieces: List[Piece], board: Board):
         self.pieces: Dict[str, Piece] = {}
         for idx, p in enumerate(pieces):
-            # כדי למנוע התנגשות מפתחות, נותנים id ייחודי לכל כלי
             self.pieces[f"{p.piece_id}_{idx}"] = p
         self.board = board
         self.user_input_queue = queue.Queue()
-        self._stop_user_input_thread = False
         self._user_input_thread = None
+        self.player1 = PlayerInputState(is_player_one=True)
+        self.player2 = PlayerInputState(is_player_one=False)
+
+        self.player1.cursor = [3, 6]
+        self.player2.cursor = [4, 1]
+
+    def game_time_ms(self) -> int:
+        return int(time.time() * 1000)
 
     def clone_board(self) -> Board:
         return self.board.clone()
 
-    def start_user_input_thread(self):
-        def user_input_loop():
-            while not self._stop_user_input_thread:
-                time.sleep(0.1)  # לדוגמה, אין כאן ממש קלט
+    from pynput.keyboard import Key, KeyCode
 
-        self._stop_user_input_thread = False
-        self._user_input_thread = threading.Thread(target=user_input_loop, daemon=True)
-        self._user_input_thread.start()
+    
+    def start_user_input_thread(self):
+        def on_press(key):
+            self.user_input_queue.put(key)
+        listener = keyboard.Listener(on_press=on_press)
+        listener.start()
+        self._user_input_thread = listener
 
     def run(self):
         self.start_user_input_thread()
-        while True:
-            board_clone = self.clone_board()  # Board חדש עם תמונה ומידות
-            frame = board_clone.img           # Img - תמונת הלוח
 
+        while True:
+            board_clone = self.clone_board()
+            frame = board_clone.img.copy()
             cell_W_pix = board_clone.cell_W_pix
             cell_H_pix = board_clone.cell_H_pix
 
             for p in self.pieces.values():
-                p.draw(frame, cell_W_pix, cell_H_pix)
+                p.draw_on_board(frame, cell_W_pix, cell_H_pix)
+
+            self._draw_cursor(frame, self.player1, color=(0, 255, 0))
+            self._draw_cursor(frame, self.player2, color=(0, 0, 255))
 
             cv2.imshow("Game", frame.img)
 
+            key = None
+            try:
+                key = self.user_input_queue.get_nowait()
+            except queue.Empty:
+                pass
 
-            key = cv2.waitKey(1) & 0xFF
-            if key == 27:  # ESC - יציאה
+            if key is not None:
+                print("key pressed:", key)
+                if key == keyboard.Key.esc:
+                    break
+                self._handle_input(key)
+
+            if cv2.waitKey(1) & 0xFF == 27:
                 break
 
-        self._stop_user_input_thread = True
+            time.sleep(0.016)
+
         if self._user_input_thread is not None:
-            self._user_input_thread.join(timeout=1)
+            self._user_input_thread.stop()
         cv2.destroyAllWindows()
+
+    def _process_input(self, cmd: Command):
+        self.pieces[cmd.piece_id].on_command(cmd)
+
+    def _handle_input(self, key):
+        # שחקן 1 (ירוק) - חיצים
+        if key == Key.left:
+            self.player1.cursor[0] = max(0, self.player1.cursor[0] - 1)
+        elif key == Key.up:
+            self.player1.cursor[1] = max(0, self.player1.cursor[1] - 1)
+        elif key == Key.right:
+            self.player1.cursor[0] = min(self.board.H_cells - 1, self.player1.cursor[0] + 1)
+        elif key == Key.down:
+            self.player1.cursor[1] = min(self.board.W_cells - 1, self.player1.cursor[1] + 1)
+        elif key == Key.enter:
+            self._handle_select_or_move(self.player1)
+
+        # שחקן 2 (אדום) - WASD
+        elif isinstance(key, KeyCode):
+            char = key.char
+            if char is None:
+                return
+
+            char = char.lower()
+
+            # נגדיר את המקשים לפי אנגלית בלבד:
+            if char == 'a':
+                self.player2.cursor[0] = max(0, self.player2.cursor[0] - 1)
+            elif char == 'w':
+                self.player2.cursor[1] = max(0, self.player2.cursor[1] - 1)
+            elif char == 'd':
+                self.player2.cursor[0] = min(self.board.H_cells - 1, self.player2.cursor[0] + 1)
+            elif char == 's':
+                self.player2.cursor[1] = min(self.board.W_cells - 1, self.player2.cursor[1] + 1)
+
+        elif key == Key.space:
+            self._handle_select_or_move(self.player2)
+
+
+    def _handle_select_or_move(self, player: PlayerInputState):
+        col, row = player.cursor
+        piece = self.board.get_piece_at(col, row)
+
+        if not player.has_selected_piece:
+            if piece and (piece.belongs_to_player_one() == player.is_player_one):
+                player.selected_piece_id = piece.piece_id
+                player.has_selected_piece = True
+        else:
+            cmd = Command(
+                piece_id=player.selected_piece_id,
+                type="move",
+                params={"target": [col, row]},
+                timestamp_ms=self.game_time_ms()
+            )
+            self._process_input(cmd)
+            player.reset_selection()
+
+    def _draw_cursor(self, frame: Img, player: PlayerInputState, color=(0, 255, 0)):
+        x = player.cursor[0] * self.board.cell_W_pix
+        y = player.cursor[1] * self.board.cell_H_pix
+        cv2.rectangle(frame.img, (x, y), (x + self.board.cell_W_pix, y + self.board.cell_H_pix), color, 2)
+
+    def _draw(self):
+        pass
+
+    def _show(self) -> bool:
+        pass
+
+    def _resolve_collisions(self):
+        pass
+
+    def _is_win(self) -> bool:
+        pass
+
+    def _announce_win(self):
+        pass

@@ -1,6 +1,7 @@
 from typing import Tuple, Dict
 from Piece import Piece
 from img import Img
+from State import State
 import cv2
 import pathlib
 
@@ -21,3 +22,6 @@ class PieceFactory:
         )
 
         return Piece(piece_id, cell, piece_img)
+    def _build_state_machine(self, piece_dir: pathlib.Path) -> State:
+        """Build a state machine for a piece from its directory."""
+        pass

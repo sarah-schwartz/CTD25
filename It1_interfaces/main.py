@@ -2,6 +2,7 @@ import pathlib
 from Board import Board
 from PieceFactory import PieceFactory
 from Game import Game
+from img import Img
 
 def read_board_config(path: pathlib.Path):
     pieces_info = []
@@ -18,7 +19,6 @@ def read_board_config(path: pathlib.Path):
     return pieces_info
 
 def create_board(h=8, w=8) -> Board:
-    from img import Img
     base_dir = pathlib.Path(__file__).parent
     board_img_path = base_dir.parent / "board.png"
 
