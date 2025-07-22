@@ -20,7 +20,10 @@ class Piece:
             self._state = self._state.process_command(cmd)
             self._state.update(now_ms)
         pass
+    def belongs_to_player_one(self) -> bool:
+        return "W" in self.piece_id
 
+    
     def reset(self, start_ms: int):
         self._state.reset()
         """Reset the piece to idle state."""
