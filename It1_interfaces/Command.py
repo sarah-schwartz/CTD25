@@ -1,13 +1,18 @@
+from dataclasses import dataclass, field
+from typing import List, Dict, Tuple, Optional
+
+
+
 class Command:
-    def __init__(self, piece_id: str, type: str, params: dict, timestamp_ms: int):
+    def __init__(self,
+                 piece_id: str,
+                 type: str,
+                 params: Dict,
+                 timestamp_ms: Optional[int] = None):
         self.piece_id = piece_id
         self.type = type
         self.params = params
         self.timestamp_ms = timestamp_ms
 
-    def __str__(self):
-        return (
-            f"[COMMAND] {self.type.upper()} "
-            f"| piece: {self.piece_id} "
-            f"| from: {self.params.get('from')} -> to: {self.params.get('target')}"
-        )
+    def __repr__(self):
+        return f"Command(piece_id={self.piece_id}, type={self.type}, params={self.params}, timestamp_ms={self.timestamp_ms})"

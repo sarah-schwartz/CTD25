@@ -2,7 +2,6 @@ import pathlib
 from Board import Board
 from PieceFactory import PieceFactory
 from Game import Game
-from img import Img
 
 def read_board_config(path: pathlib.Path):
     pieces_info = []
@@ -19,6 +18,7 @@ def read_board_config(path: pathlib.Path):
     return pieces_info
 
 def create_board(h=8, w=8) -> Board:
+    from img import Img
     base_dir = pathlib.Path(__file__).parent
     board_img_path = base_dir.parent / "board.png"
 
@@ -48,13 +48,14 @@ def main():
 
     for piece_id, cell in piece_positions:
         piece_id = piece_id.strip()
-        sprite_rel_path = f"{piece_id}/states/idle/sprites/1.png"
+        sprite_rel_path = f"{piece_id}/states/jump/sprites/2.png"
         full_path = pieces_root / sprite_rel_path
 
         if not full_path.exists():
             continue
-
-        piece = piece_factory.create_piece(piece_id, cell, {"sprite": sprite_rel_path})
+        
+        # תיקון: הסרת הפרמטר השלישי
+        piece = piece_factory.create_piece(piece_id, cell)
         if piece is not None:
             game_pieces.append(piece)
 

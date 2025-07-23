@@ -1,16 +1,17 @@
-# Graphics = get curr images
-# Physics  = get curr pos
-# State    = Graphics + Physics + Transitions to other states
-# Piece    = ID + Moves + Wrapper for State (to hide state transitions)
-# Board    = background + pix / world dimensions
-# Game     = Pieces + Board + run() # game logic.
 
-# run()
-#     in = listen to keyboard
-#     process_input(in)
+# # Graphics = get curr images
+# # Physics  = get curr pos
+# # State    = Graphics + Physics + Transitions to other states
+# # Piece    = ID + Moves + Wrapper for State (to hide state transitions)
+# # Board    = background + pix / world dimensions
+# # Game     = Pieces + Board + run() # game logic.
+
+# # run()
+# #     in = listen to keyboard
+# #     process_input(in)
     
-# design patterns:
-# Factory, Command, Tempalte, State Machine
+# #design patterns:
+# # Factory, Command, Tempalte, State Machine
 
 # def create_game(board.txt, root_folder):
 #     pieces_templates = {} # { piece_id : piece }

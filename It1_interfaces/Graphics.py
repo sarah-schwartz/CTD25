@@ -1,9 +1,7 @@
 import pathlib
-from typing import List, Dict
+from typing import List, Optional
 from img import Img
-from Command import Command
 from Board import Board
-
 
 class Graphics:
     def __init__(self,
@@ -11,50 +9,41 @@ class Graphics:
                  board: Board,
                  loop: bool = True,
                  fps: float = 6.0):
-        """Initialize graphics with sprites folder, cell size, loop setting, and FPS."""
-        self.frame_time_ms = int(1000 / fps)
+        
+        png_files = sorted(list(sprites_folder.glob("*.png")))
+        
+        cell_w = board.cell_W_pix
+        cell_h = board.cell_H_pix
+
+        self.frames: List[Img] = []
+        for p in png_files:
+            img = Img()
+            img.read(str(p), size=(cell_w, cell_h))
+            self.frames.append(img)
+       
+
+        self.frame_time_ms = int(1000 / fps) if fps > 0 else float('inf')
         self.loop = loop
         self.board = board
-        self.frames_by_state: Dict[str, List[Img]] = {}
-
-        # Load all subfolders as states
-        for state_dir in sprites_folder.iterdir():
-            if state_dir.is_dir():
-                frames = []
-                for img_path in sorted(state_dir.glob("*.png")):
-                    frames.append(Img(img_path))
-                self.frames_by_state[state_dir.name] = frames
-
-        # Default values
-        self.current_state = "idle"
         self.current_frame = 0
         self.last_update_ms = None
-        self.finished = False
-
+        self.finished = not self.frames
     def copy(self):
-        """Create a shallow copy of the graphics object."""
-        new_gfx = Graphics.__new__(Graphics)  # Bypass __init__
-        new_gfx.frame_time_ms = self.frame_time_ms
-        new_gfx.loop = self.loop
-        new_gfx.board = self.board
-        new_gfx.frames_by_state = self.frames_by_state  # Shared reference (shallow copy)
-        new_gfx.current_state = self.current_state
-        new_gfx.current_frame = self.current_frame
-        new_gfx.last_update_ms = self.last_update_ms
-        new_gfx.finished = self.finished
+        new_gfx = Graphics.__new__(Graphics)
+        new_gfx.__dict__.update(self.__dict__)
+        new_gfx.reset()
         return new_gfx
 
-    def reset(self, cmd: Command):
-        """Reset the animation with a new command."""
-        state = cmd.type if cmd.type in self.frames_by_state else "idle"
-        self.current_state = state
+    def reset(self):
         self.current_frame = 0
         self.last_update_ms = None
-        self.finished = False
+        self.finished = not self.frames
 
+    def is_finished(self) -> bool:
+        return self.finished
+        
     def update(self, now_ms: int):
-        """Advance animation frame based on game-loop time."""
-        if self.finished:
+        if self.finished or not self.frames:
             return
 
         if self.last_update_ms is None:
@@ -67,14 +56,14 @@ class Graphics:
             self.current_frame += frames_to_advance
             self.last_update_ms += frames_to_advance * self.frame_time_ms
 
-            max_frames = len(self.frames_by_state[self.current_state])
-            if self.current_frame >= max_frames:
+            if self.current_frame >= len(self.frames):
                 if self.loop:
-                    self.current_frame %= max_frames
+                    self.current_frame %= len(self.frames)
                 else:
-                    self.current_frame = max_frames - 1
+                    self.current_frame = len(self.frames) - 1
                     self.finished = True
 
-    def get_img(self) -> Img:
-        """Get the current frame image."""
-        return self.frames_by_state[self.current_state][self.current_frame]
+    def draw_on(self, canvas: Img, x: int, y: int):
+        if self.frames and self.current_frame < len(self.frames):
+            self.frames[self.current_frame].draw_on(canvas, int(x), int(y))
+

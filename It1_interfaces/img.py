@@ -76,3 +76,12 @@ class Img:
         if self.img is not None:
             new_img.img = self.img.copy()
         return new_img
+
+
+
+
+
+
+
+
+
