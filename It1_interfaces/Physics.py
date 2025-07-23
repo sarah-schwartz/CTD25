@@ -1,120 +1,204 @@
-# Physics.py (הגרסה המעודכנת)
-
-from typing import Tuple, Optional
+from abc import ABC, abstractmethod
 from Command import Command
-from Board import Board
-import numpy as np
+import time
 
-class Physics:
-    """מחלקה בסיסית לפיזיקה. תומכת עכשיו גם במצבי המתנה מוגדרים בזמן."""
-    def __init__(self, start_cell: Tuple[int, int], board: Board, speed_m_s: float = 0.0, duration_ms: int = 0):
+class Physics(ABC):
+    """מחלקת בסיס לפיזיקה"""
+    
+    def __init__(self, initial_pos: tuple, board, speed_m_s: float = 1.0):
+        self.initial_pos = initial_pos
+        self.current_pos = initial_pos
         self.board = board
-        self.cell = start_cell
         self.speed = speed_m_s
-        self.duration_ms = duration_ms # <<< משך המצב באלפיות השנייה
-        self.cmd: Optional[Command] = None
-        self.current_pos_pix = np.array([start_cell[1] * self.board.cell_W_pix, start_cell[0] * self.board.cell_H_pix], dtype=float)
-        self.elapsed_time_ms = 0 # <<< כמה זמן עבר מתחילת המצב
-        self.last_update = None
         self.finished = False
-
-    def copy(self):
-        return Physics(self.cell, self.board, self.speed, self.duration_ms)
-
-    def reset(self, cmd: Optional[Command]):
-        self.cmd = cmd
-        self.last_update = None
-        self.finished = False
-        self.elapsed_time_ms = 0  
-        if cmd and cmd.type == "move":
-            target_cell = tuple(cmd.params.get("target", self.cell))
-            self.cell = target_cell
-            self.current_pos_pix = np.array([target_cell[1] * self.board.cell_W_pix, target_cell[0] * self.board.cell_H_pix], dtype=float)
-
-
+        self.command = None
+        self.start_time_ms = None
+        self.next_state_when_finished = "idle"
+    
+    @abstractmethod
+    def reset(self, command: Command):
+        """איפוס הפיזיקה עם פקודה חדשה"""
+        pass
+    
+    @abstractmethod
     def update(self, now_ms: int):
-        if self.finished:
-            return
-
-        if self.last_update is None:
-            self.last_update = now_ms
-            if self.duration_ms == 0 and self.speed == 0:
-                self.finished = True
-            return
-
-        delta_ms = now_ms - self.last_update
-        self.last_update = now_ms
-        self.elapsed_time_ms += delta_ms
-        if self.duration_ms > 0 and self.elapsed_time_ms >= self.duration_ms:
-            self.finished = True
-
-    def get_pos(self) -> Tuple[int, int]:
-        return self.cell
-
-    def get_pos_pix(self) -> Tuple[float, float]:
-        return self.current_pos_pix
-
+        """עדכון הפיזיקה"""
+        pass
+    
+    def get_pos(self) -> tuple:
+        """החזרת המיקום הנוכחי"""
+        return self.current_pos
+    
+    def set_pos(self, pos: tuple):
+        """הגדרת מיקום חדש"""
+        self.current_pos = pos
+    
     def is_finished(self) -> bool:
+        """בדיקה האם הפיזיקה סיימה"""
         return self.finished
+    
+    def get_command(self) -> Command:
+        """החזרת פקודה למעבר מצב אם הפיזיקה סיימה"""
+        if self.finished and self.next_state_when_finished:
+            return Command("auto", self.next_state_when_finished, {}, timestamp_ms=time.time_ns() // 1000000)
+        return None
+    
+    def copy(self) -> 'Physics':
+        """יצירת עותק של הפיזיקה"""
+        new_physics = self.__class__(self.initial_pos, self.board, self.speed)
+        new_physics.current_pos = self.current_pos
+        new_physics.finished = self.finished
+        new_physics.next_state_when_finished = self.next_state_when_finished
+        return new_physics
+    
+    def can_be_captured(self) -> bool:
+        """האם הpiece יכול להיתפס במצב זה"""
+        return True
+    
+    def can_capture(self) -> bool:
+        """האם הpiece יכול לתפוס במצב זה"""
+        return False
+
+class IdlePhysics(Physics):
+    """פיזיקה למצב idle - לא זז"""
+    
+    def reset(self, command: Command):
+        self.command = command
+        self.finished = False
+        self.start_time_ms = None
+    
+    def update(self, now_ms: int):
+        # במצב idle הpiece לא זז ולא עושה כלום
+        # הוא מוכן לקבל פקודות חדשות
+        pass
+    
+    def can_be_captured(self) -> bool:
+        return True
+    
+    def can_capture(self) -> bool:
+        return False
 
 class MovePhysics(Physics):
-    def __init__(self, start_cell: Tuple[int, int], board: Board, speed_m_s: float):
-        super().__init__(start_cell, board, speed_m_s=speed_m_s)
-        self.start_pos_pix = None
-        self.end_pos_pix = None
-        self.total_move_time_ms = 0
-        
-    def copy(self):
-        return MovePhysics(self.cell, self.board, self.speed)
-
-    def reset(self, cmd: Command):
-        super().reset(cmd) 
-        if not cmd or cmd.type != "move":
-            self.finished = True
-            return
-
-        start_cell = self.cell 
-        target_cell = tuple(cmd.params.get("target"))
-
-        if start_cell == target_cell or self.speed <= 0:
-            self.finished = True
-            return
-
-        self.start_pos_pix = np.array([start_cell[1] * self.board.cell_W_pix, start_cell[0] * self.board.cell_H_pix], dtype=float)
-        self.end_pos_pix = np.array([target_cell[1] * self.board.cell_W_pix, target_cell[0] * self.board.cell_H_pix], dtype=float)
-        self.current_pos_pix = self.start_pos_pix.copy()
-
-        distance_pix = np.linalg.norm(self.end_pos_pix - self.start_pos_pix)
-        pixels_per_meter = self.board.cell_W_pix / self.board.cell_W_m if self.board.cell_W_m > 0 else 1
-        distance_m = distance_pix / pixels_per_meter
-
-        self.total_move_time_ms = (distance_m / self.speed) * 1000 if self.speed > 0 else 0
-        self.elapsed_time_ms = 0
+    """פיזיקה למצב move - תנועה בין משבצות"""
+    
+    def __init__(self, initial_pos: tuple, board, speed_m_s: float = 1.0):
+        super().__init__(initial_pos, board, speed_m_s)
+        self.target_pos = None
+        self.next_state_when_finished = "long_rest"
+    
+    def reset(self, command: Command):
+        self.command = command
         self.finished = False
-
-
-    def update(self, now_ms: int):
-        if self.finished:
-            return
-
-        if self.last_update is None:
-            self.last_update = now_ms
-            return
-
-        delta_ms = now_ms - self.last_update
-        self.last_update = now_ms
-        self.elapsed_time_ms += delta_ms
-
-        if self.total_move_time_ms == 0 or self.elapsed_time_ms >= self.total_move_time_ms:
-            self.current_pos_pix = self.end_pos_pix
-            self.cell = tuple(self.cmd.params.get("target"))
-            self.finished = True
+        self.start_time_ms = None
+        # נניח שהפקודה מכילה את המיקום היעד
+        if "target" in command.params:
+            self.target_pos = command.params["target"]
         else:
-            ratio = self.elapsed_time_ms / self.total_move_time_ms
-            self.current_pos_pix = self.start_pos_pix + ratio * (self.end_pos_pix - self.start_pos_pix)
+            self.target_pos = self.current_pos
+    
+    def update(self, now_ms: int):
+        if self.start_time_ms is None:
+            self.start_time_ms = now_ms
+            return
+        
+        if self.target_pos is None or self.current_pos == self.target_pos:
+            self.finished = True
+            return
+        
+        # חישוב המרחק והזמן הנדרש
+        elapsed_time_s = (now_ms - self.start_time_ms) / 1000.0
+        
+        # תנועה פשוטה - נניח שזה תמיד לוקח שנייה אחת לעבור משבצת
+        if elapsed_time_s >= 1.0:
+            self.current_pos = self.target_pos
+            self.finished = True
+    
+    def can_be_captured(self) -> bool:
+        return False
+    
+    def can_capture(self) -> bool:
+        return True
 
+class JumpPhysics(Physics):
+    """פיזיקה למצב jump - קפיצה באותה משבצת"""
+    
+    def __init__(self, initial_pos: tuple, board, speed_m_s: float = 1.0):
+        super().__init__(initial_pos, board, speed_m_s)
+        self.next_state_when_finished = "short_rest"
+    
+    def reset(self, command: Command):
+        self.command = command
+        self.finished = False
+        self.start_time_ms = None
+    
+    def update(self, now_ms: int):
+        if self.start_time_ms is None:
+            self.start_time_ms = now_ms
+            return
+        
+        # קפיצה לוקחת חצי שנייה
+        elapsed_time_s = (now_ms - self.start_time_ms) / 1000.0
+        if elapsed_time_s >= 0.5:
+            self.finished = True
+    
+    def can_be_captured(self) -> bool:
+        return False
+    
+    def can_capture(self) -> bool:
+        return True
 
-    def get_pos(self) -> Tuple[int, int]:
-        if self.finished and self.cmd:
-            return tuple(self.cmd.params.get("target", self.cell))
-        return self.cell
+class ShortRestPhysics(Physics):
+    """פיזיקה למצב short_rest - מנוחה קצרה אחרי קפיצה"""
+    
+    def __init__(self, initial_pos: tuple, board, speed_m_s: float = 1.0):
+        super().__init__(initial_pos, board, speed_m_s)
+        self.rest_duration_s = 1.0  # שנייה אחת של מנוחה
+        self.next_state_when_finished = "idle"
+    
+    def reset(self, command: Command):
+        self.command = command
+        self.finished = False
+        self.start_time_ms = None
+    
+    def update(self, now_ms: int):
+        if self.start_time_ms is None:
+            self.start_time_ms = now_ms
+            return
+        
+        elapsed_time_s = (now_ms - self.start_time_ms) / 1000.0
+        if elapsed_time_s >= self.rest_duration_s:
+            self.finished = True
+    
+    def can_be_captured(self) -> bool:
+        return True
+    
+    def can_capture(self) -> bool:
+        return False
+
+class LongRestPhysics(Physics):
+    """פיזיקה למצב long_rest - מנוחה ארוכה אחרי תנועה"""
+    
+    def __init__(self, initial_pos: tuple, board, speed_m_s: float = 1.0):
+        super().__init__(initial_pos, board, speed_m_s)
+        self.rest_duration_s = 2.0  # שתי שניות של מנוחה
+        self.next_state_when_finished = "idle"
+    
+    def reset(self, command: Command):
+        self.command = command
+        self.finished = False
+        self.start_time_ms = None
+    
+    def update(self, now_ms: int):
+        if self.start_time_ms is None:
+            self.start_time_ms = now_ms
+            return
+        
+        elapsed_time_s = (now_ms - self.start_time_ms) / 1000.0
+        if elapsed_time_s >= self.rest_duration_s:
+            self.finished = True
+    
+    def can_be_captured(self) -> bool:
+        return True
+    
+    def can_capture(self) -> bool:
+        return False

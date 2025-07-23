@@ -1,16 +1,36 @@
-# PhysicsFactory.py (הגרסה המעודכנת)
-from typing import Dict
+from Physics import Physics, IdlePhysics, MovePhysics, JumpPhysics, ShortRestPhysics, LongRestPhysics
+from Command import Command
 from Board import Board
-from Physics import Physics, MovePhysics
 
 class PhysicsFactory:
+    """מפעל ליצירת אובייקטי Physics לפי סוג המצב"""
+    
     def __init__(self, board: Board):
         self.board = board
-
-    def create(self, cfg: Dict, start_cell=(0,0)) -> Physics:
-        speed = cfg.get("speed_m_per_sec", 0.0)
-        duration = cfg.get("duration_ms", 0)
-
-        if speed > 0:
-            return MovePhysics(start_cell, self.board, speed_m_s=speed)
-        return Physics(start_cell, self.board, speed_m_s=speed, duration_ms=duration)
+    
+    def create(self, initial_pos: tuple, command: Command, config: dict) -> Physics:
+        """יצירת אובייקט Physics לפי סוג הפקודה והגדרות"""
+        
+        speed_m_s = config.get("speed_m_per_sec", 1.0)
+        physics_type = command.type
+        
+        # יצירת הפיזיקה המתאימה לפי סוג המצב
+        if physics_type == "idle":
+            physics = IdlePhysics(initial_pos, self.board, speed_m_s)
+        elif physics_type == "move":
+            physics = MovePhysics(initial_pos, self.board, speed_m_s)
+        elif physics_type == "jump":
+            physics = JumpPhysics(initial_pos, self.board, speed_m_s)
+        elif physics_type == "short_rest":
+            physics = ShortRestPhysics(initial_pos, self.board, speed_m_s)
+        elif physics_type == "long_rest":
+            physics = LongRestPhysics(initial_pos, self.board, speed_m_s)
+        else:
+            # ברירת מחדל - idle physics
+            physics = IdlePhysics(initial_pos, self.board, speed_m_s)
+        
+        # הגדרת המצב הבא מתוך ההגדרות
+        if "next_state_when_finished" in config:
+            physics.next_state_when_finished = config["next_state_when_finished"]
+        
+        return physics

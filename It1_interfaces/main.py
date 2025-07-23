@@ -43,21 +43,15 @@ def main():
     board = create_board()
     piece_factory = PieceFactory(board, pieces_root)
 
-    piece_positions = read_board_config(board_txt)
+    # Create a piece for each cell on the board
     game_pieces = []
-
-    for piece_id, cell in piece_positions:
-        piece_id = piece_id.strip()
-        sprite_rel_path = f"{piece_id}/states/jump/sprites/2.png"
-        full_path = pieces_root / sprite_rel_path
-
-        if not full_path.exists():
-            continue
-        
-        # תיקון: הסרת הפרמטר השלישי
-        piece = piece_factory.create_piece(piece_id, cell)
-        if piece is not None:
-            game_pieces.append(piece)
+    for row in range(board.H_cells):
+        for col in range(board.W_cells):
+            piece_id = f"Piece_{row}_{col}_template"
+            start_cell = (row, col)
+            piece = piece_factory.create_piece(piece_id, start_cell)
+            if piece is not None:
+                game_pieces.append(piece)
 
     game = Game(game_pieces, board)
     game.run()
