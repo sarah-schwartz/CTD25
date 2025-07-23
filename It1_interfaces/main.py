@@ -13,8 +13,9 @@ def read_board_config(path: pathlib.Path):
             parts = line.split()
             if len(parts) != 3:
                 raise ValueError(f"Invalid line in board.txt: {line}")
-            piece_id, r, c = parts[0], int(parts[1]), int(parts[2])
-            pieces_info.append((piece_id, (r, c)))
+            # כאן אנחנו קוראים את סוג החייל (למשל 'QW'), לא ID ייחודי
+            piece_type, r, c = parts[0], int(parts[1]), int(parts[2])
+            pieces_info.append((piece_type, (r, c)))
     return pieces_info
 
 def create_board(h=8, w=8) -> Board:
@@ -23,7 +24,7 @@ def create_board(h=8, w=8) -> Board:
     board_img_path = base_dir.parent / "board.png"
 
     img = Img()
-    img.read(str(board_img_path), size=(w * 64, h * 64))  
+    img.read(str(board_img_path), size=(w * 64, h * 64))
 
     return Board(
         cell_H_pix=64,
@@ -46,16 +47,14 @@ def main():
     piece_positions = read_board_config(board_txt)
     game_pieces = []
 
-    for piece_id, cell in piece_positions:
-        piece_id = piece_id.strip()
-        sprite_rel_path = f"{piece_id}/states/jump/sprites/2.png"
-        full_path = pieces_root / sprite_rel_path
+    for piece_type, cell in piece_positions:
+        # <<< הוספת לוגיקה ליצירת ID ייחודי
+        # ניצור מזהה ייחודי על ידי שילוב סוג החייל והמיקום שלו
+        # לדוגמה: חייל מסוג 'QW' במיקום (7, 4) יקבל את ה-ID: 'QW_7_4'
+        unique_piece_id = f"{piece_type}_{cell[0]}_{cell[1]}"
 
-        if not full_path.exists():
-            continue
-        
-        # תיקון: הסרת הפרמטר השלישי
-        piece = piece_factory.create_piece(piece_id, cell)
+        # נשתמש ב-ID הייחודי שיצרנו כדי ליצור את החייל
+        piece = piece_factory.create_piece(unique_piece_id, cell)
         if piece is not None:
             game_pieces.append(piece)
 
