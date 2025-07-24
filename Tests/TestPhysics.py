@@ -10,15 +10,14 @@ from unittest.mock import MagicMock
 def test_idle_physics_reset():
     board = MagicMock(spec=Board)
     physics = IdlePhysics((5, 5), board, speed_m_s=1.0)
-    cmd = Command(1, "idle", {}, {})  # הוסף פרמטר נוסף
+    cmd = Command(1, "idle", {}, {})  
     physics.reset(cmd)
     assert physics.get_pos() == (5, 5)
 
 def test_move_physics_updates_position():
     board = MagicMock(spec=Board)
     physics = MovePhysics((0, 0), board, speed_m_s=1.0)
-    cmd = Command(1, "move", {}, {})  # שנה מ-"idle" ל-"move"
-    physics.reset(cmd)  # השתמש במשתנה במקום ליצור חדש
+    cmd = Command(1, "move", {}, {})  
 
     pos_before = physics.get_pos()
     physics.update(1000)

@@ -46,9 +46,6 @@ def test_set_transition_and_process_command_changes_state(mock_dependencies, sam
     next_state = state1.process_command(sample_command)
     assert next_state is state2
     assert next_state.get_command() == sample_command
-    # לאחר מעבר, next_state.reset נקרא -> בדוק את הקריאות
-    # פה אנחנו בודקים קריאה ל-reset ב-state2 (next_state)
-    # לא ב-state1 (state1)
     next_state._graphics.reset.assert_called_with(sample_command)
     next_state._physics.reset.assert_called_with(sample_command)
 

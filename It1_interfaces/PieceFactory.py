@@ -1,10 +1,9 @@
-# PieceFactory.py (הגרסה המעודכנת)
 
 from typing import Tuple, Dict
 from Piece import Piece
 import pathlib
 import numpy as np
-from State import StateManager
+from StateManager import StateManager
 from PhysicsFactory import PhysicsFactory
 from GraphicsFactory import GraphicsFactory
 from Board import Board
@@ -25,7 +24,7 @@ class PieceFactory:
 
         if piece_type not in self.state_manager_templates:
             sm_template = StateManager.from_config(
-                piece_folder=piece_type_folder,  # הסרת "states" מכאן
+                piece_folder=piece_type_folder,  
                 board=self.board,
                 physics_factory=self.physics_factory,
                 graphics_factory=self.graphics_factory
@@ -34,7 +33,7 @@ class PieceFactory:
         new_sm = self.state_manager_templates[piece_type].copy()
 
         if piece_type not in self.moves_templates:
-            moves_config_path = piece_type_folder / "moves.txt" # <<< שימוש בקובץ txt
+            moves_config_path = piece_type_folder / "moves.txt"  
             self.moves_templates[piece_type] = Moves(moves_config_path, (self.board.H_cells, self.board.W_cells))
         moves = self.moves_templates[piece_type]
 

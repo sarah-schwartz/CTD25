@@ -15,7 +15,6 @@ class Moves:
                 if not line or line.startswith("#"):
                     continue
                 try:
-                    # תמיכה בפורמט: dr,dc או dr,dc:type
                     if ":" in line:
                         move_part, move_type = line.split(":", 1)
                         dr, dc = map(int, move_part.split(","))

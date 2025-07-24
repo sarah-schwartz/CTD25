@@ -3,7 +3,6 @@ import os
 import pytest
 from unittest.mock import MagicMock, patch
 
-# מוסיף את תקיית It1_interfaces לנתיב החיפוש
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../It1_interfaces')))
 from Game import Game
 from Command import Command

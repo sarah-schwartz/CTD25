@@ -1,7 +1,8 @@
 from typing import Tuple
 from img import Img
 from Command import Command
-from State import StateManager
+from StateManager import StateManager
+from State import State
 import copy
 from Moves import Moves
 class Piece:

@@ -3,10 +3,9 @@ import pathlib
 import tempfile
 import pytest
 
-# מוסיף את תקיית CTD25 לנתיב
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
-from It1_interfaces.Moves import Moves  # עדכון כאן!
+from It1_interfaces.Moves import Moves  
 
 @pytest.fixture
 def tmp_rules_file():

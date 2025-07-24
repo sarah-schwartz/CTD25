@@ -48,12 +48,7 @@ def main():
     game_pieces = []
 
     for piece_type, cell in piece_positions:
-        # <<< הוספת לוגיקה ליצירת ID ייחודי
-        # ניצור מזהה ייחודי על ידי שילוב סוג החייל והמיקום שלו
-        # לדוגמה: חייל מסוג 'QW' במיקום (7, 4) יקבל את ה-ID: 'QW_7_4'
         unique_piece_id = f"{piece_type}_{cell[0]}_{cell[1]}"
-
-        # נשתמש ב-ID הייחודי שיצרנו כדי ליצור את החייל
         piece = piece_factory.create_piece(unique_piece_id, cell)
         if piece is not None:
             game_pieces.append(piece)

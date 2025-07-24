@@ -1,4 +1,3 @@
-# TestBoard.py
 
 import sys
 import os

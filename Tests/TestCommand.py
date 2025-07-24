@@ -1,7 +1,6 @@
 import sys
 import os
 
-# מוסיף את תיקיית It1_interfaces לנתיב החיפוש
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'It1_interfaces')))
 
 import pytest
